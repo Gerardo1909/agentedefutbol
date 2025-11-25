@@ -1,0 +1,64 @@
+# ========================================
+# Configuración del Proyecto
+# ========================================
+
+[build-system]
+requires = ["setuptools>=68.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentedefutbol"
+version = "0.1.0"
+description = "Agente estilo chat que genera recomendaciones sobre futbol."
+readme = "README.md"
+requires-python = ">=3.13"
+license = {text = "MIT"}
+authors = [
+    {name = "Gerardo Toboso", email = "gerardotoboso1909@gmail.com"}
+]
+maintainers = [
+    {name = "Gerardo Toboso", email = "gerardotoboso1909@gmail.com"}
+]
+keywords = ["football", "chatbot", "ai", "langchain", "langgraph", "fastapi"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Framework :: FastAPI",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    "fastapi>=0.121.3",
+    "httpx>=0.28.1",
+    "langchain>=1.0.8",
+    "langgraph>=1.0.3",
+    "pydantic>=2.12.4",
+    "python-dotenv>=1.2.1",
+    "requests>=2.32.5",
+    "uvicorn>=0.38.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.1",
+    "pytest-html>=3.2.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.21.0"
+]
+
+# ========================================
+# Configuración de Setuptools
+# ========================================
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["*"]
+exclude = ["tests*", "*.tests*", "*.tests.*"]
+
+

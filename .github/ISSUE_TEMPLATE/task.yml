@@ -1,0 +1,55 @@
+name: "🧩 Nueva tarea"
+description: "Tarea pequeña y puntual para el desarrollo de la API"
+title: "[TASK] "
+labels: ["task"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: 📝 Descripción
+      description: Explicá brevemente qué se necesita hacer y por qué.
+      placeholder: >
+        Ejemplo: Agregar endpoint GET /users para listar todos los usuarios registrados.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: ✅ Criterios de aceptación
+      description: Qué condiciones deben cumplirse para dar esta tarea como finalizada.
+      placeholder: >
+        - El endpoint debe responder con 200 y devolver la lista de usuarios.
+        - Debe incluir paginación.
+        - Agregar tests para el servicio y la ruta.
+    validations:
+      required: true
+
+  - type: textarea
+    id: testing
+    attributes:
+      label: 🧪 Tests asociados
+      description: Indicar qué tests deben crearse o modificarse (si aplica).
+      placeholder: >
+        - tests/test_users.py: agregar test para GET /users
+        - tests/test_auth.py: verificar autenticación en el endpoint
+    validations:
+      required: false
+
+  - type: input
+    id: branch
+    attributes:
+      label: 🌿 Nombre sugerido para la branch
+      description: Proponé un nombre breve y descriptivo para la branch.
+      placeholder: feat/add-users-endpoint
+
+  - type: dropdown
+    id: difficulty
+    attributes:
+      label: ⚙️ Dificultad estimada
+      options:
+        - Sencilla (≤1h)
+        - Media (1-3h)
+        - Compleja (>3h)
+    validations:
+      required: false
