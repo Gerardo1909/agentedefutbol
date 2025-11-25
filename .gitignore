@@ -33,7 +33,6 @@ share/python-wheels/
 *.egg
 agentedefutbol.egg-info/
 MANIFEST
-uv.lock
 .python-version
 
 # Logging and tests reports
