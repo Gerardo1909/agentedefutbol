@@ -3,9 +3,10 @@ Módulo con los esquemas Pydantic para validación de requests y responses de la
 Define los modelos de entrada y salida para los endpoints de FastAPI.
 """
 
-from typing import Optional, List, Literal
-from pydantic import BaseModel, Field
 from datetime import datetime
+from typing import List, Literal, Optional
+
+from pydantic import BaseModel, Field
 
 
 class ChatRequest(BaseModel):
@@ -52,6 +53,9 @@ class ChatResponse(BaseModel):
     sources: Optional[List[str]] = Field(
         default=None, description="Fuentes de información utilizadas"
     )
+    used_tools: Optional[List[str]] = Field(
+        default=None, description="Lista de herramientas utilizadas en la respuesta"
+    )
     timestamp: datetime = Field(
         default_factory=datetime.now, description="Timestamp de la respuesta"
     )
@@ -62,7 +66,8 @@ class ChatResponse(BaseModel):
                 {
                     "response": "El Real Madrid ganó 3-1 contra el Barcelona.",
                     "confidence": 0.95,
-                    "sources": ["API-Football", "ESPN"],
+                    "sources": ["Conocimiento del modelo + Tools"],
+                    "used_tools": ["get_match_results", "get_team_stats"],
                     "timestamp": "2025-11-24T10:30:00",
                 }
             ]
@@ -77,9 +82,7 @@ class MatchRecommendationRequest(BaseModel):
 
     home_team: str = Field(..., description="Equipo local", examples=["Real Madrid"])
     away_team: str = Field(..., description="Equipo visitante", examples=["Barcelona"])
-    match_date: Optional[str] = Field(
-        default=None, description="Fecha del partido (formato: YYYY-MM-DD)"
-    )
+    match_date: str = Field(..., description="Fecha del partido (formato: YYYY-MM-DD)")
 
 
 class MatchRecommendationResponse(BaseModel):
@@ -95,6 +98,9 @@ class MatchRecommendationResponse(BaseModel):
     )
     key_factors: Optional[List[str]] = Field(
         default=None, description="Factores clave considerados en la recomendación"
+    )
+    used_tools: Optional[List[str]] = Field(
+        default=None, description="Lista de herramientas utilizadas en el análisis"
     )
     confidence: Optional[float] = Field(default=None, ge=0.0, le=1.0)
 
