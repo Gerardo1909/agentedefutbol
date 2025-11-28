@@ -6,11 +6,12 @@ import uvicorn
 from fastapi import FastAPI, status, APIRouter
 from api.v1.chat import router as chat_router
 from models.schemas import HealthResponse
+from core.config import settings
 
 app = FastAPI(
-    title="Agente de futbol",
-    description="API para interactuar con un agente de futbol basado en IA.",
-    version="1.0.0",
+    title=settings.API_TITLE,
+    description=settings.API_DESCRIPTION,
+    version=settings.API_VERSION,
 )
 
 health_router = APIRouter(prefix="/health", tags=["Estado de salud de la aplicación."])
