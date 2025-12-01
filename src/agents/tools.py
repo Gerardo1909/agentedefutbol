@@ -1,139 +1,287 @@
 """
 Herramientas (tools) para el agente de fútbol.
-
-Este archivo define las herramientas que el agente podrá usar en futuras iteraciones.
-Por ahora son stubs que retornan datos de ejemplo.
 """
 
-from typing import Any, Dict, List
+from typing import Any, Optional, Dict
 
 from langchain_core.tools import tool
 
-
-@tool(
-    "get_match_results",
-    description="Obtiene los resultados recientes de un equipo de fútbol",
+from core.logging import agent_tools_logger
+from services.football_info_service import (
+    FootballInfoService,
+    InvalidTeamError,
+    InvalidLeagueError,
+    MongoDBConnectionError,
+    MongoDBQueryError,
 )
-def get_match_results(team_name: str, limit: int = 5) -> List[Dict[str, Any]]:
-    """Obtiene los últimos resultados de un equipo.
+
+_service = FootballInfoService()
+
+
+@tool("get_upcoming_matches")
+async def get_upcoming_matches(
+    league: Optional[str] = None, team: Optional[str] = None, limit: int = 5
+) -> Dict[str, Any]:
+    """Obtiene próximos partidos de una liga O de un equipo.
 
     Args:
-        team_name: Nombre del equipo
-        limit: Número de resultados a obtener (por defecto 5)
+        league: Nombre de la liga (opcional). Ej: "Premier League", "La Liga", "Champions League"
+        team: Nombre del equipo (opcional). Ej: "Manchester United", "Barcelona", "Real Madrid"
+        limit: Número de partidos (por defecto 5, máximo 20)
 
-    Returns:
-        Lista de diccionarios con resultados de partidos
+    Importante: Debes proporcionar LEAGUE o TEAM, no ambos ni ninguno.
     """
-    # TODO: Implementar integración con API-Football
-    return [
-        {
-            "date": "2025-11-20",
-            "opponent": "Equipo X",
-            "score": "2-1",
-            "result": "Victoria",
-            "competition": "Liga",
+    agent_tools_logger.info(
+        f"Tool invocada: get_upcoming_matches - Liga: {league}, Equipo: {team}, Limit: {limit}"
+    )
+
+    # Validación de parámetros
+    if not league and not team:
+        agent_tools_logger.warning(
+            "get_upcoming_matches: No se proporcionó league ni team"
+        )
+        return {
+            "error": "Necesito saber de qué equipo o liga quieres ver los próximos partidos",
+            "suggestion": "Por favor especifica un equipo o una liga",
         }
-    ]
 
-
-@tool("get_upcoming_matches", description="Obtiene los próximos partidos de un equipo")
-def get_upcoming_matches(team_name: str, limit: int = 5) -> List[Dict[str, Any]]:
-    """Obtiene los próximos partidos programados para un equipo.
-
-    Args:
-        team_name: Nombre del equipo
-        limit: Número de partidos a obtener (por defecto 5)
-
-    Returns:
-        Lista de diccionarios con próximos partidos
-    """
-    # TODO: Implementar integración con API-Football
-    return [
-        {
-            "date": "2025-11-30",
-            "opponent": "Equipo Y",
-            "venue": "Casa",
-            "competition": "Liga",
-            "time": "20:00",
+    if league and team:
+        agent_tools_logger.warning(
+            "get_upcoming_matches: Se proporcionaron ambos parámetros"
+        )
+        return {
+            "error": "Solo puedo buscar por equipo O por liga, no ambos",
+            "suggestion": "Especifica solo el equipo o solo la liga",
         }
-    ]
 
+    # Validar límite
+    if limit < 1 or limit > 20:
+        limit = min(max(limit, 1), 20)
+        agent_tools_logger.info(f"Límite ajustado a: {limit}")
 
-@tool("get_team_stats", description="Obtiene estadísticas de un equipo de fútbol")
-def get_team_stats(team_name: str, season: str = "2024-2025") -> Dict[str, Any]:
-    """Obtiene estadísticas detalladas de un equipo.
+    try:
+        # Buscar por equipo o por liga
+        if team:
+            result = await _service.get_team_upcoming_matches(team, limit)
+        else:
+            result = await _service.get_league_upcoming_matches(league, limit)
 
-    Args:
-        team_name: Nombre del equipo
-        season: Temporada (formato: YYYY-YYYY)
+        agent_tools_logger.info(
+            f"Tool completada: get_upcoming_matches - Resultados: {len(result)}"
+        )
 
-    Returns:
-        Diccionario con estadísticas del equipo
-    """
-    # TODO: Implementar integración con API-Football
-    return {
-        "team": team_name,
-        "season": season,
-        "matches_played": 15,
-        "wins": 10,
-        "draws": 3,
-        "losses": 2,
-        "goals_for": 32,
-        "goals_against": 15,
-        "position": 3,
-    }
+        if not result:
+            return {
+                "message": f"No encontré próximos partidos programados para {team or league}",
+                "data": [],
+            }
 
+        return {"data": result}
 
-@tool("get_player_stats", description="Obtiene estadísticas de un jugador de fútbol")
-def get_player_stats(player_name: str, team_name: str = None) -> Dict[str, Any]:
-    """Obtiene estadísticas detalladas de un jugador.
-
-    Args:
-        player_name: Nombre del jugador
-        team_name: Nombre del equipo (opcional)
-
-    Returns:
-        Diccionario con estadísticas del jugador
-    """
-    # TODO: Implementar integración con API-Football
-    return {
-        "player": player_name,
-        "team": team_name or "Equipo Ejemplo",
-        "matches": 12,
-        "goals": 8,
-        "assists": 5,
-        "yellow_cards": 2,
-        "red_cards": 0,
-    }
-
-
-@tool("get_football_news", description="Obtiene noticias recientes sobre fútbol")
-def get_football_news(query: str = "football", limit: int = 5) -> List[Dict[str, Any]]:
-    """Obtiene noticias recientes relacionadas con el fútbol.
-
-    Args:
-        query: Término de búsqueda para las noticias
-        limit: Número de noticias a obtener (por defecto 5)
-
-    Returns:
-        Lista de diccionarios con noticias
-    """
-    # TODO: Implementar integración con News API
-    return [
-        {
-            "title": "Noticia de ejemplo sobre fútbol",
-            "source": "Fuente Deportiva",
-            "url": "https://example.com/noticia",
-            "published_at": "2025-11-25T10:00:00Z",
-            "description": "Esta es una noticia de ejemplo...",
+    except InvalidTeamError as e:
+        agent_tools_logger.warning(f"Equipo no válido: {team} - {str(e)}")
+        return {
+            "error": f"No encontré el equipo '{team}'",
+            "suggestion": "Verifica que el nombre esté escrito correctamente",
         }
-    ]
+
+    except InvalidLeagueError as e:
+        agent_tools_logger.warning(f"Liga no válida: {league} - {str(e)}")
+        return {
+            "error": f"No encontré la liga '{league}'",
+            "suggestion": "Verifica que el nombre esté escrito correctamente",
+        }
+
+    except MongoDBConnectionError as e:
+        agent_tools_logger.error(f"Error de conexión a MongoDB: {str(e)}")
+        return {
+            "error": "No puedo acceder a la base de datos en este momento",
+            "suggestion": "Intenta nuevamente en unos momentos",
+        }
+
+    except MongoDBQueryError as e:
+        agent_tools_logger.error(f"Error en consulta MongoDB: {str(e)}", exc_info=True)
+        return {
+            "error": "Hubo un problema al buscar los partidos",
+            "suggestion": "Intenta reformular tu pregunta",
+        }
+
+    except Exception as e:
+        agent_tools_logger.error(
+            f"Error inesperado en get_upcoming_matches: {str(e)}", exc_info=True
+        )
+        return {
+            "error": "Ocurrió un problema inesperado",
+            "suggestion": "Por favor intenta de nuevo o contacta al administrador",
+        }
+
+
+@tool("get_match_results")
+async def get_match_results(
+    league: Optional[str] = None, team: Optional[str] = None, limit: int = 5
+) -> Dict[str, Any]:
+    """Obtiene resultados recientes de una liga O de un equipo.
+
+    Args:
+        league: Nombre de la liga (opcional). Ej: "Premier League", "La Liga"
+        team: Nombre del equipo (opcional). Ej: "Manchester United", "Barcelona", "Real Madrid"
+        limit: Número de resultados (por defecto 5, máximo 20)
+
+    Importante: Debes proporcionar LEAGUE o TEAM, no ambos ni ninguno.
+    """
+    agent_tools_logger.info(
+        f"Tool invocada: get_match_results - Liga: {league}, Equipo: {team}, Limit: {limit}"
+    )
+
+    # Validación de parámetros
+    if not league and not team:
+        agent_tools_logger.warning(
+            "get_match_results: No se proporcionó league ni team"
+        )
+        return {
+            "error": "Necesito saber de qué equipo o liga quieres ver los resultados",
+            "suggestion": "Por favor especifica un equipo o una liga",
+        }
+
+    if league and team:
+        agent_tools_logger.warning(
+            "get_match_results: Se proporcionaron ambos parámetros"
+        )
+        return {
+            "error": "Solo puedo buscar por equipo O por liga, no ambos",
+            "suggestion": "Especifica solo el equipo o solo la liga",
+        }
+
+    # Validar límite
+    if limit < 1 or limit > 20:
+        limit = min(max(limit, 1), 20)
+        agent_tools_logger.info(f"Límite ajustado a: {limit}")
+
+    try:
+        # Buscar por equipo o por liga
+        if team:
+            result = await _service.get_team_match_results(team, limit)
+        else:
+            result = await _service.get_league_match_results(league, limit)
+
+        agent_tools_logger.info(
+            f"Tool completada: get_match_results - Resultados: {len(result)}"
+        )
+
+        if not result:
+            return {
+                "message": f"No encontré resultados recientes para {team or league}",
+                "data": [],
+            }
+
+        return {"data": result}
+
+    except InvalidTeamError as e:
+        agent_tools_logger.warning(f"Equipo no válido: {team} - {str(e)}")
+        return {
+            "error": f"No encontré el equipo '{team}'",
+            "suggestion": "Verifica que el nombre esté escrito correctamente",
+        }
+
+    except InvalidLeagueError as e:
+        agent_tools_logger.warning(f"Liga no válida: {league} - {str(e)}")
+        return {
+            "error": f"No encontré la liga '{league}'",
+            "suggestion": "Verifica que el nombre esté escrito correctamente",
+        }
+
+    except MongoDBConnectionError as e:
+        agent_tools_logger.error(f"Error de conexión a MongoDB: {str(e)}")
+        return {
+            "error": "No puedo acceder a la base de datos en este momento",
+            "suggestion": "Intenta nuevamente en unos momentos",
+        }
+
+    except MongoDBQueryError as e:
+        agent_tools_logger.error(f"Error en consulta MongoDB: {str(e)}", exc_info=True)
+        return {
+            "error": "Hubo un problema al buscar los resultados",
+            "suggestion": "Intenta reformular tu pregunta",
+        }
+
+    except Exception as e:
+        agent_tools_logger.error(
+            f"Error inesperado en get_match_results: {str(e)}", exc_info=True
+        )
+        return {
+            "error": "Ocurrió un problema inesperado",
+            "suggestion": "Por favor intenta de nuevo o contacta al administrador",
+        }
+
+
+@tool("get_standings")
+async def get_standings(league: str, season: Optional[str] = None) -> Dict[str, Any]:
+    """Obtiene la tabla de posiciones de una liga.
+
+    Args:
+        league: Nombre de la liga (requerido). Ej: "Premier League", "La Liga"
+        season: Temporada (opcional). Ej: "2025", "2024". Si no se especifica, usa la actual
+    """
+    agent_tools_logger.info(
+        f"Tool invocada: get_standings - Liga: {league}, Temporada: {season}"
+    )
+
+    # Validación
+    if not league:
+        agent_tools_logger.warning("get_standings: No se proporcionó league")
+        return {
+            "error": "Necesito saber de qué liga quieres ver la tabla de posiciones",
+            "suggestion": "Por favor especifica una liga",
+        }
+
+    try:
+        result = await _service.get_standings(league, season)
+
+        agent_tools_logger.info(
+            f"Tool completada: get_standings - Posiciones: {len(result)}"
+        )
+
+        if not result:
+            return {
+                "message": f"No encontré la tabla de posiciones para {league}",
+                "data": [],
+            }
+
+        return {"data": result}
+
+    except InvalidLeagueError as e:
+        agent_tools_logger.warning(f"Liga no válida: {league} - {str(e)}")
+        return {
+            "error": f"No encontré la liga '{league}'",
+            "suggestion": "Verifica que el nombre esté escrito correctamente",
+        }
+
+    except MongoDBConnectionError as e:
+        agent_tools_logger.error(f"Error de conexión a MongoDB: {str(e)}")
+        return {
+            "error": "No puedo acceder a la base de datos en este momento",
+            "suggestion": "Intenta nuevamente en unos momentos",
+        }
+
+    except MongoDBQueryError as e:
+        agent_tools_logger.error(f"Error en consulta MongoDB: {str(e)}", exc_info=True)
+        return {
+            "error": "Hubo un problema al buscar la tabla de posiciones",
+            "suggestion": "Intenta reformular tu pregunta",
+        }
+
+    except Exception as e:
+        agent_tools_logger.error(
+            f"Error inesperado en get_standings: {str(e)}", exc_info=True
+        )
+        return {
+            "error": "Ocurrió un problema inesperado",
+            "suggestion": "Por favor intenta de nuevo o contacta al administrador",
+        }
 
 
 tools = [
-    get_match_results,
     get_upcoming_matches,
-    get_team_stats,
-    get_player_stats,
-    get_football_news,
+    get_match_results,
+    get_standings,
 ]
