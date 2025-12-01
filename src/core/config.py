@@ -2,28 +2,29 @@
 Configuración centralizada del proyecto.
 """
 
-import os
-from typing import Optional
-from dotenv import load_dotenv
+from pathlib import Path
 
-load_dotenv()
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
-class Settings:
+class Settings(BaseSettings):
     """Configuración de la aplicación."""
 
-    # LLM Configuration
-    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "")
-    TEMPERATURE: float = float(os.getenv("TEMPERATURE", ""))
-    MAX_RETRIES: int = int(os.getenv("MAX_RETRIES", ""))
+    model_config = SettingsConfigDict(
+        env_file=str(BASE_DIR / ".env"),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
-    # API Configuration
-    API_TITLE: str = "Agente de Fútbol"
-    API_VERSION: str = "1.0.0"
-    API_DESCRIPTION: str = "API para interactuar con un agente de fútbol basado en IA"
+    # Configuración del agente groq
+    groq_api_key: str
+    groq_model: str
+    temperature: float
+    max_retries: int
 
-    # External APIs (para futuras implementaciones)
-    FOOTBALL_API_KEY: Optional[str] = os.getenv("FOOTBALL_API_KEY")
-
-
-settings = Settings()
+    # Detalles de la API
+    api_title: str = "Agente de Fútbol"
+    api_version: str = "1.0.0"
+    api_description: str = "API para interactuar con un agente de fútbol basado en IA"

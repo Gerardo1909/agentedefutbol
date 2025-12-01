@@ -2,16 +2,25 @@
 Módulo principal de la aplicación.
 """
 
+from pathlib import Path
+
 import uvicorn
-from fastapi import FastAPI, status, APIRouter
+from dotenv import load_dotenv
+from fastapi import APIRouter, FastAPI, status
+
+# Cargar variables de entorno ANTES de importar cualquier configuración
+load_dotenv(Path(__file__).parent.parent / ".env")
+
 from api.v1.chat import router as chat_router
+from core.config import Settings
 from models.schemas import HealthResponse
-from core.config import settings
+
+app_settings = Settings()
 
 app = FastAPI(
-    title=settings.API_TITLE,
-    description=settings.API_DESCRIPTION,
-    version=settings.API_VERSION,
+    title=app_settings.api_title,
+    description=app_settings.api_description,
+    version=app_settings.api_version,
 )
 
 health_router = APIRouter(prefix="/health", tags=["Estado de salud de la aplicación."])
