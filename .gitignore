@@ -7,7 +7,6 @@ wheels/
 *.egg-info
 
 # Virtual environments
-.env
 .venv
 env/
 venv/
@@ -60,4 +59,6 @@ langgraph.json
 
 # Secrets
 .env
+.env.test
+data/
 
