@@ -5,6 +5,7 @@ Define las rutas para interactuar con el chatbot mediante FastAPI.
 
 from typing import Optional
 from fastapi import APIRouter, status, HTTPException, Depends
+from core.logging import api_logger
 from models.schemas import (
     ChatRequest,
     ChatResponse,
@@ -39,6 +40,7 @@ def get_football_agent(
     Returns:
         FootballAgent configurado para el usuario actual
     """
+    api_logger.debug(f"Creando instancia de FootballAgent para usuario: {user_name}")
     return FootballAgent(user_name=user_name)
 
 
@@ -92,13 +94,16 @@ async def chat_endpoint(
     - "Explícame la táctica 4-3-3"
     - "¿Qué equipos han ganado más Champions?"
     """
+    api_logger.info(f"Request recibido en /chat - Session: {request.session_id}, Mensaje: {request.message[:100]}")
     try:
         response = await agent.process_message(
             message=request.message, session_id=request.session_id
         )
+        api_logger.info(f"Respuesta generada exitosamente - Session: {request.session_id}, Tools usadas: {len(response.used_tools) if response.used_tools else 0}")
         return response
 
     except Exception as e:
+        api_logger.error(f"Error en /chat endpoint - Session: {request.session_id}: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al procesar el mensaje: {str(e)}",
@@ -164,15 +169,18 @@ async def match_recommendation_endpoint(
     }
     ```
     """
+    api_logger.info(f"Request recibido en /recommend - Partido: {request.home_team} vs {request.away_team}, Fecha: {request.match_date}")
     try:
         response = await agent.analyze_match(
             home_team=request.home_team,
             away_team=request.away_team,
             match_date=request.match_date,
         )
+        api_logger.info(f"Recomendacion generada exitosamente - Partido: {request.home_team} vs {request.away_team}, Tools usadas: {len(response.used_tools) if response.used_tools else 0}")
         return response
 
     except Exception as e:
+        api_logger.error(f"Error en /recommend endpoint - Partido: {request.home_team} vs {request.away_team}: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al generar recomendación: {str(e)}",
